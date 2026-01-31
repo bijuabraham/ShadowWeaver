@@ -106,6 +106,28 @@ invert_mode = st.sidebar.checkbox(
     help="Check for dark thread on light background (seeks dark pixels instead of bright)",
 )
 
+# Weight map settings
+st.sidebar.markdown("---")
+st.sidebar.subheader("Center Focus")
+
+center_weight = st.sidebar.slider(
+    "Center Weight",
+    min_value=1.0,
+    max_value=5.0,
+    value=3.0,
+    step=0.5,
+    help="How much more important center pixels are (1.0 = no preference)",
+)
+
+center_radius_pct = st.sidebar.slider(
+    "Center Radius (%)",
+    min_value=20,
+    max_value=80,
+    value=50,
+    step=5,
+    help="Percentage of circle radius for high-priority zone",
+)
+
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
 thread_thickness_px = Config.mm_to_pixels(
@@ -149,9 +171,11 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
-        # Create center weight map (3x weight for center 50% to prioritize faces)
+        # Create center weight map to prioritize facial features
         weight_map = create_center_weight_map(
-            canvas_size, center_weight=3.0, center_radius_pct=0.5
+            canvas_size,
+            center_weight=center_weight,
+            center_radius_pct=center_radius_pct / 100.0,
         )
 
         # Initialize algorithm and renderer
