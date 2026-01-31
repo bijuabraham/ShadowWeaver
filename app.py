@@ -106,6 +106,15 @@ invert_mode = st.sidebar.checkbox(
     help="Check for dark thread on light background (seeks dark pixels instead of bright)",
 )
 
+# Algorithm settings
+st.sidebar.markdown("---")
+st.sidebar.subheader("Algorithm")
+
+use_radial_weight = st.sidebar.checkbox(
+    "Center Penalty (Radial Weighting)",
+    value=True,
+    help="Penalize center pixels using squared distance. Forces algorithm to define edges (jawline, hair) before center details.",
+)
 
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
@@ -150,8 +159,10 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
-        # Create radial weight map to prioritize edge features (jawline, hair, ears)
-        weight_map = create_radial_weight_map(canvas_size)
+        # Create weight map if radial weighting is enabled
+        # Uses squared distance: weight = (distance/max_radius)²
+        # This aggressively penalizes center pixels to prioritize edges
+        weight_map = create_radial_weight_map(canvas_size) if use_radial_weight else None
 
         # Initialize algorithm and renderer
         algorithm = GreedyStringArtAlgorithm(

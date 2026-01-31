@@ -81,11 +81,16 @@ def calculate_circular_distance(nail_a: int, nail_b: int, num_nails: int) -> int
 @st.cache_data
 def create_radial_weight_map(canvas_size: int = 800) -> np.ndarray:
     """
-    Create a radial weight map: weight = distance_from_center / max_radius.
+    Create a radial weight map using squared distance from center.
 
-    - Center pixels have weight ~0 (deprioritized)
-    - Edge pixels have weight 1.0 (full importance)
-    - Smooth gradient forces algorithm to define outer features first
+    Formula: weight = (distance_from_center / max_radius)²
+
+    This aggressively penalizes center pixels:
+    - Center (0%) → weight = 0 (ignored)
+    - 25% from center → weight = 0.0625
+    - 50% from center → weight = 0.25
+    - 75% from center → weight = 0.5625
+    - Edge (100%) → weight = 1.0 (full importance)
 
     Args:
         canvas_size: Size of the square canvas in pixels
@@ -99,10 +104,11 @@ def create_radial_weight_map(canvas_size: int = 800) -> np.ndarray:
     # Create coordinate grids
     Y, X = np.ogrid[:canvas_size, :canvas_size]
 
-    # Calculate distance from center for each pixel
+    # Calculate normalized distance from center for each pixel
     distances = np.sqrt((X - center) ** 2 + (Y - center) ** 2)
+    normalized = np.clip(distances / max_radius, 0, 1)
 
-    # Radial weight: 0 at center, 1 at edge
-    weight_map = np.clip(distances / max_radius, 0, 1)
+    # Squared radial weight: aggressive center penalty
+    weight_map = normalized ** 2
 
     return weight_map.astype(np.float32)
