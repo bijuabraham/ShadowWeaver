@@ -12,7 +12,7 @@ import streamlit as st
 from src.algorithm import GreedyStringArtAlgorithm
 from src.config import Config
 from src.export import generate_sequence_with_metadata, image_to_bytes
-from src.geometry import calculate_nail_positions
+from src.geometry import calculate_nail_positions, create_center_weight_map
 from src.image_processing import get_display_image, preprocess_image
 from src.renderer import StringArtRenderer
 
@@ -149,6 +149,11 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
+        # Create center weight map (3x weight for center 50% to prioritize faces)
+        weight_map = create_center_weight_map(
+            canvas_size, center_weight=3.0, center_radius_pct=0.5
+        )
+
         # Initialize algorithm and renderer
         algorithm = GreedyStringArtAlgorithm(
             target_image=target_image,
@@ -156,6 +161,7 @@ if uploaded_file is not None:
             min_nail_skip=min_nail_skip,
             line_opacity=line_opacity,
             decay_factor=Config.DEFAULT_DECAY_FACTOR,
+            weight_map=weight_map,
         )
 
         renderer = StringArtRenderer(canvas_size, background_color, thread_color)
