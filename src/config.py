@@ -18,6 +18,10 @@ class Config:
     # Canvas settings
     CANVAS_SIZE_PX = 800
 
+    # Color defaults
+    DEFAULT_BACKGROUND_COLOR = "#000000"
+    DEFAULT_THREAD_COLOR = "#FFFFFF"
+
     @staticmethod
     def mm_to_pixels(mm: float, diameter_inches: float, canvas_px: int = 800) -> float:
         """

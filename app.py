@@ -84,6 +84,28 @@ min_nail_skip = st.sidebar.number_input(
     help="Minimum nail distance to prevent too-short lines",
 )
 
+# Color settings
+st.sidebar.markdown("---")
+st.sidebar.subheader("Colors")
+
+background_color = st.sidebar.color_picker(
+    "Background Color",
+    Config.DEFAULT_BACKGROUND_COLOR,
+    help="Color of the board background",
+)
+
+thread_color = st.sidebar.color_picker(
+    "Thread Color",
+    Config.DEFAULT_THREAD_COLOR,
+    help="Color of the thread",
+)
+
+invert_mode = st.sidebar.checkbox(
+    "Invert Algorithm",
+    value=False,
+    help="Check for dark thread on light background (seeks dark pixels instead of bright)",
+)
+
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
 thread_thickness_px = Config.mm_to_pixels(
@@ -105,8 +127,10 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
     # Process image
+    # invert=True for white thread on dark background (default)
+    # invert=False for dark thread on light background (inverted mode)
     image_bytes = uploaded_file.read()
-    target_image = preprocess_image(image_bytes, canvas_size)
+    target_image = preprocess_image(image_bytes, canvas_size, invert=(not invert_mode))
     nail_positions = calculate_nail_positions(num_nails, canvas_size)
 
     # Display columns
@@ -133,7 +157,7 @@ if uploaded_file is not None:
             decay_factor=Config.DEFAULT_DECAY_FACTOR,
         )
 
-        renderer = StringArtRenderer(canvas_size)
+        renderer = StringArtRenderer(canvas_size, background_color, thread_color)
         renderer.create_blank_canvas()
 
         # Progress tracking
@@ -211,13 +235,21 @@ else:
     st.subheader("Preview: Nail Layout")
     preview_nails = calculate_nail_positions(num_nails, canvas_size)
 
-    preview = np.zeros((canvas_size, canvas_size, 3), dtype=np.uint8)
+    # Parse colors for preview
+    from src.renderer import hex_to_rgb
 
-    # Draw nails
+    bg_rgb = hex_to_rgb(background_color)
+    thread_rgb = hex_to_rgb(thread_color)
+
+    preview = np.zeros((canvas_size, canvas_size, 3), dtype=np.uint8)
+    preview[:, :] = bg_rgb  # Fill with background color
+
+    # Draw nails with thread color
     for i, (x, y) in enumerate(preview_nails):
-        cv2.circle(preview, (int(x), int(y)), 3, (255, 255, 255), -1)
+        cv2.circle(preview, (int(x), int(y)), 3, thread_rgb, -1)
         # Label every 20th nail for clarity
         if i % 20 == 0:
+            # Use a contrasting gray for labels
             cv2.putText(
                 preview,
                 str(i),
@@ -238,5 +270,5 @@ else:
 st.markdown("---")
 st.markdown(
     "*ShadowWeaver uses a greedy algorithm to find optimal thread paths. "
-    "The simulation shows white thread on a black background.*"
+    "Customize colors and invert mode in the sidebar.*"
 )

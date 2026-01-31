@@ -23,7 +23,9 @@ def create_circular_mask(size: int) -> np.ndarray:
 
 
 @st.cache_data
-def preprocess_image(image_bytes: bytes, canvas_size: int = 800) -> np.ndarray:
+def preprocess_image(
+    image_bytes: bytes, canvas_size: int = 800, invert: bool = True
+) -> np.ndarray:
     """
     Preprocess uploaded image for string art algorithm.
 
@@ -32,11 +34,13 @@ def preprocess_image(image_bytes: bytes, canvas_size: int = 800) -> np.ndarray:
     2. Convert to grayscale
     3. Resize to fit within circular canvas
     4. Apply circular mask
-    5. Invert (white thread on black background needs inverted target)
+    5. Optionally invert based on thread/background combination
 
     Args:
         image_bytes: Raw image bytes from upload
         canvas_size: Target canvas size in pixels
+        invert: If True, invert image (for white thread on dark background).
+                If False, keep original (for dark thread on light background).
 
     Returns:
         np.ndarray: Grayscale image (0-255) where higher = more thread desired
@@ -78,11 +82,13 @@ def preprocess_image(image_bytes: bytes, canvas_size: int = 800) -> np.ndarray:
     mask = create_circular_mask(canvas_size)
     masked = cv2.bitwise_and(cropped, mask)
 
-    # Invert: we want high values where we need thread (dark areas in original)
-    # For black background + white thread: invert the image
-    inverted = 255 - masked
-
-    return inverted
+    # Invert based on mode:
+    # - invert=True (default): white thread on dark background -> seek dark areas -> invert
+    # - invert=False: dark thread on light background -> seek light areas -> don't invert
+    if invert:
+        return 255 - masked
+    else:
+        return masked
 
 
 def get_display_image(target_image: np.ndarray) -> np.ndarray:
