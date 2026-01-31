@@ -79,24 +79,25 @@ def calculate_circular_distance(nail_a: int, nail_b: int, num_nails: int) -> int
 
 
 @st.cache_data
-def create_radial_weight_map(canvas_size: int = 800) -> np.ndarray:
+def create_radial_weight_map(canvas_size: int = 800, min_weight: float = 0.15) -> np.ndarray:
     """
     Create a radial weight map using squared distance from center.
 
-    Formula: weight = (distance_from_center / max_radius)²
+    Formula: weight = max(min_weight, (distance_from_center / max_radius)²)
 
-    This aggressively penalizes center pixels:
-    - Center (0%) → weight = 0 (ignored)
-    - 25% from center → weight = 0.0625
+    This penalizes center pixels while keeping them viable:
+    - Center (0%) → weight = min_weight (reduced but not ignored)
+    - 25% from center → weight = ~0.15 (floor)
     - 50% from center → weight = 0.25
     - 75% from center → weight = 0.5625
     - Edge (100%) → weight = 1.0 (full importance)
 
     Args:
         canvas_size: Size of the square canvas in pixels
+        min_weight: Minimum weight for center pixels (default 0.15)
 
     Returns:
-        np.ndarray of shape (canvas_size, canvas_size) with weight values (0.0 to 1.0)
+        np.ndarray of shape (canvas_size, canvas_size) with weight values
     """
     center = canvas_size // 2
     max_radius = center - 1
@@ -108,7 +109,8 @@ def create_radial_weight_map(canvas_size: int = 800) -> np.ndarray:
     distances = np.sqrt((X - center) ** 2 + (Y - center) ** 2)
     normalized = np.clip(distances / max_radius, 0, 1)
 
-    # Squared radial weight: aggressive center penalty
-    weight_map = normalized ** 2
+    # Squared radial weight with minimum floor
+    # Center pixels get reduced weight but aren't completely ignored
+    weight_map = np.maximum(normalized ** 2, min_weight)
 
     return weight_map.astype(np.float32)
