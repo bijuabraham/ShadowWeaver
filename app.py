@@ -12,7 +12,7 @@ import streamlit as st
 from src.algorithm import GreedyStringArtAlgorithm
 from src.config import Config
 from src.export import generate_sequence_with_metadata, image_to_bytes
-from src.geometry import calculate_nail_positions, create_center_weight_map
+from src.geometry import calculate_nail_positions, create_radial_weight_map
 from src.image_processing import get_display_image, preprocess_image
 from src.renderer import StringArtRenderer
 
@@ -106,27 +106,6 @@ invert_mode = st.sidebar.checkbox(
     help="Check for dark thread on light background (seeks dark pixels instead of bright)",
 )
 
-# Edge priority settings (penalize center to prioritize outer features)
-st.sidebar.markdown("---")
-st.sidebar.subheader("Edge Priority")
-
-center_penalty = st.sidebar.slider(
-    "Center Penalty",
-    min_value=0.1,
-    max_value=1.0,
-    value=0.3,
-    step=0.1,
-    help="Lower = more penalty on center pixels (0.3 = center worth 30%)",
-)
-
-center_radius_pct = st.sidebar.slider(
-    "Penalty Zone (%)",
-    min_value=20,
-    max_value=80,
-    value=50,
-    step=5,
-    help="Percentage of radius where penalty applies",
-)
 
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
@@ -171,12 +150,8 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
-        # Create weight map to penalize center and prioritize edge features
-        weight_map = create_center_weight_map(
-            canvas_size,
-            center_penalty=center_penalty,
-            center_radius_pct=center_radius_pct / 100.0,
-        )
+        # Create radial weight map to prioritize edge features (jawline, hair, ears)
+        weight_map = create_radial_weight_map(canvas_size)
 
         # Initialize algorithm and renderer
         algorithm = GreedyStringArtAlgorithm(

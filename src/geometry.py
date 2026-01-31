@@ -79,28 +79,22 @@ def calculate_circular_distance(nail_a: int, nail_b: int, num_nails: int) -> int
 
 
 @st.cache_data
-def create_center_weight_map(
-    canvas_size: int = 800,
-    center_penalty: float = 0.3,
-    center_radius_pct: float = 0.5,
-) -> np.ndarray:
+def create_radial_weight_map(canvas_size: int = 800) -> np.ndarray:
     """
-    Create a weight map that penalizes center pixels to prioritize edge features.
+    Create a radial weight map: weight = distance_from_center / max_radius.
 
-    Pixels within center_radius_pct have center_penalty weight (lower score).
-    Pixels outside have weight 1.0 (full importance for edges like jawline, hair).
+    - Center pixels have weight ~0 (deprioritized)
+    - Edge pixels have weight 1.0 (full importance)
+    - Smooth gradient forces algorithm to define outer features first
 
     Args:
         canvas_size: Size of the square canvas in pixels
-        center_penalty: Weight for center pixels (0.3 = 30% importance, penalized)
-        center_radius_pct: Percentage of radius for penalty zone (default 0.5 = 50%)
 
     Returns:
-        np.ndarray of shape (canvas_size, canvas_size) with weight values
+        np.ndarray of shape (canvas_size, canvas_size) with weight values (0.0 to 1.0)
     """
     center = canvas_size // 2
     max_radius = center - 1
-    center_radius = max_radius * center_radius_pct
 
     # Create coordinate grids
     Y, X = np.ogrid[:canvas_size, :canvas_size]
@@ -108,7 +102,7 @@ def create_center_weight_map(
     # Calculate distance from center for each pixel
     distances = np.sqrt((X - center) ** 2 + (Y - center) ** 2)
 
-    # Penalize center: center_penalty inside, 1.0 outside (edges prioritized)
-    weight_map = np.where(distances <= center_radius, center_penalty, 1.0)
+    # Radial weight: 0 at center, 1 at edge
+    weight_map = np.clip(distances / max_radius, 0, 1)
 
     return weight_map.astype(np.float32)
