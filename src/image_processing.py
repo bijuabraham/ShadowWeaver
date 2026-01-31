@@ -83,8 +83,8 @@ def preprocess_image(
     masked = cv2.bitwise_and(cropped, mask)
 
     # Invert based on mode:
-    # - invert=True (default): white thread on dark background -> seek dark areas -> invert
-    # - invert=False: dark thread on light background -> seek light areas -> don't invert
+    # - invert=False (default): white thread on black background -> seek LIGHT areas (faces) -> don't invert
+    # - invert=True: dark thread on white background -> seek DARK areas -> invert to make them bright
     if invert:
         return 255 - masked
     else:

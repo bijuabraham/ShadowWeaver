@@ -127,10 +127,10 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
     # Process image
-    # invert=True for white thread on dark background (default)
-    # invert=False for dark thread on light background (inverted mode)
+    # invert=False (default): white thread on black background -> seek LIGHT areas (face/subject)
+    # invert=True (checked): dark thread on white background -> seek DARK areas (invert to make them bright)
     image_bytes = uploaded_file.read()
-    target_image = preprocess_image(image_bytes, canvas_size, invert=(not invert_mode))
+    target_image = preprocess_image(image_bytes, canvas_size, invert=invert_mode)
     nail_positions = calculate_nail_positions(num_nails, canvas_size)
 
     # Display columns
@@ -138,7 +138,8 @@ if uploaded_file is not None:
 
     with col1:
         st.subheader("Target Image")
-        display_target = get_display_image(target_image)
+        # Show original image (undo inversion if it was applied)
+        display_target = (255 - target_image) if invert_mode else target_image
         st.image(display_target, caption="Preprocessed Target", use_container_width=True)
 
     with col2:
