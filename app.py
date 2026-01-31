@@ -78,7 +78,7 @@ total_lines = st.sidebar.slider(
 min_nail_skip = st.sidebar.number_input(
     "Minimum Nail Skip",
     min_value=5,
-    max_value=50,
+    max_value=100,
     value=Config.DEFAULT_MIN_NAIL_SKIP,
     step=1,
     help="Minimum nail distance to prevent too-short lines",
@@ -106,26 +106,26 @@ invert_mode = st.sidebar.checkbox(
     help="Check for dark thread on light background (seeks dark pixels instead of bright)",
 )
 
-# Weight map settings
+# Edge priority settings (penalize center to prioritize outer features)
 st.sidebar.markdown("---")
-st.sidebar.subheader("Center Focus")
+st.sidebar.subheader("Edge Priority")
 
-center_weight = st.sidebar.slider(
-    "Center Weight",
-    min_value=1.0,
-    max_value=5.0,
-    value=3.0,
-    step=0.5,
-    help="How much more important center pixels are (1.0 = no preference)",
+center_penalty = st.sidebar.slider(
+    "Center Penalty",
+    min_value=0.1,
+    max_value=1.0,
+    value=0.3,
+    step=0.1,
+    help="Lower = more penalty on center pixels (0.3 = center worth 30%)",
 )
 
 center_radius_pct = st.sidebar.slider(
-    "Center Radius (%)",
+    "Penalty Zone (%)",
     min_value=20,
     max_value=80,
     value=50,
     step=5,
-    help="Percentage of circle radius for high-priority zone",
+    help="Percentage of radius where penalty applies",
 )
 
 # Calculate derived values
@@ -171,10 +171,10 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
-        # Create center weight map to prioritize facial features
+        # Create weight map to penalize center and prioritize edge features
         weight_map = create_center_weight_map(
             canvas_size,
-            center_weight=center_weight,
+            center_penalty=center_penalty,
             center_radius_pct=center_radius_pct / 100.0,
         )
 

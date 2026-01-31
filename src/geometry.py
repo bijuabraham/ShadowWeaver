@@ -80,18 +80,20 @@ def calculate_circular_distance(nail_a: int, nail_b: int, num_nails: int) -> int
 
 @st.cache_data
 def create_center_weight_map(
-    canvas_size: int = 800, center_weight: float = 3.0, center_radius_pct: float = 0.5
+    canvas_size: int = 800,
+    center_penalty: float = 0.3,
+    center_radius_pct: float = 0.5,
 ) -> np.ndarray:
     """
-    Create a weight map that gives higher importance to center pixels.
+    Create a weight map that penalizes center pixels to prioritize edge features.
 
-    Pixels within center_radius_pct of the circle have center_weight multiplier.
-    Pixels outside have weight 1.0.
+    Pixels within center_radius_pct have center_penalty weight (lower score).
+    Pixels outside have weight 1.0 (full importance for edges like jawline, hair).
 
     Args:
         canvas_size: Size of the square canvas in pixels
-        center_weight: Weight multiplier for center pixels (default 3.0)
-        center_radius_pct: Percentage of radius for high-weight zone (default 0.5 = 50%)
+        center_penalty: Weight for center pixels (0.3 = 30% importance, penalized)
+        center_radius_pct: Percentage of radius for penalty zone (default 0.5 = 50%)
 
     Returns:
         np.ndarray of shape (canvas_size, canvas_size) with weight values
@@ -106,7 +108,7 @@ def create_center_weight_map(
     # Calculate distance from center for each pixel
     distances = np.sqrt((X - center) ** 2 + (Y - center) ** 2)
 
-    # Create weight map: center_weight inside center_radius, 1.0 outside
-    weight_map = np.where(distances <= center_radius, center_weight, 1.0)
+    # Penalize center: center_penalty inside, 1.0 outside (edges prioritized)
+    weight_map = np.where(distances <= center_radius, center_penalty, 1.0)
 
     return weight_map.astype(np.float32)
