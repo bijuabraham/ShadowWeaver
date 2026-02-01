@@ -116,6 +116,29 @@ use_radial_weight = st.sidebar.checkbox(
     help="Penalize center pixels using squared distance. Forces algorithm to define edges (jawline, hair) before center details.",
 )
 
+# Show radial weight configuration only when enabled
+if use_radial_weight:
+    center_min_weight = st.sidebar.slider(
+        "Center Min Weight",
+        min_value=0.05,
+        max_value=0.5,
+        value=0.15,
+        step=0.05,
+        help="Minimum weight for center pixels. Lower = more aggressive center penalty.",
+    )
+
+    radial_power = st.sidebar.slider(
+        "Distance Power",
+        min_value=1.0,
+        max_value=4.0,
+        value=2.0,
+        step=0.5,
+        help="Exponent for distance calculation. Higher = steeper penalty curve (2.0 = squared).",
+    )
+else:
+    center_min_weight = 0.15
+    radial_power = 2.0
+
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
 thread_thickness_px = Config.mm_to_pixels(
@@ -160,9 +183,13 @@ if uploaded_file is not None:
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
         # Create weight map if radial weighting is enabled
-        # Uses squared distance: weight = (distance/max_radius)²
-        # This aggressively penalizes center pixels to prioritize edges
-        weight_map = create_radial_weight_map(canvas_size) if use_radial_weight else None
+        # Uses: weight = max(min_weight, (distance/max_radius)^power)
+        # This penalizes center pixels to prioritize edges (jawline, hair)
+        weight_map = (
+            create_radial_weight_map(canvas_size, center_min_weight, radial_power)
+            if use_radial_weight
+            else None
+        )
 
         # Initialize algorithm and renderer
         algorithm = GreedyStringArtAlgorithm(
