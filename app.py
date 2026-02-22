@@ -57,15 +57,6 @@ thread_thickness_mm = st.sidebar.number_input(
     help="Physical thickness of your thread",
 )
 
-line_opacity = st.sidebar.slider(
-    "Line Opacity",
-    min_value=0.01,
-    max_value=0.5,
-    value=Config.DEFAULT_LINE_OPACITY,
-    step=0.01,
-    help="How much 'white' each thread pass adds to the simulation",
-)
-
 total_lines = st.sidebar.slider(
     "Total Lines",
     min_value=500,
@@ -144,9 +135,14 @@ canvas_size = Config.CANVAS_SIZE_PX
 thread_thickness_px = Config.mm_to_pixels(
     thread_thickness_mm, diameter_inches, canvas_size
 )
+# Calculate realistic line opacity based on thread thickness (fixed, not adjustable)
+line_opacity = Config.calculate_line_opacity(
+    thread_thickness_mm, diameter_inches, canvas_size
+)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"**Thread Thickness:** {thread_thickness_px:.2f} pixels")
+st.sidebar.markdown(f"**Line Opacity:** {line_opacity:.3f} (calculated from thickness)")
 st.sidebar.markdown(f"**Canvas Size:** {canvas_size}px")
 
 # ============ MAIN CONTENT ============

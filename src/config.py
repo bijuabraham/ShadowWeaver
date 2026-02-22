@@ -38,3 +38,23 @@ class Config:
         diameter_mm = diameter_inches * 25.4
         pixels_per_mm = canvas_px / diameter_mm
         return max(1.0, mm * pixels_per_mm)
+
+    @staticmethod
+    def calculate_line_opacity(thread_thickness_mm: float, diameter_inches: float, canvas_px: int = 800) -> float:
+        """
+        Calculate realistic line opacity based on physical thread thickness.
+
+        In real string art, each thread has fixed opacity based on its thickness.
+        Thicker thread = more coverage per pass = higher opacity.
+
+        Args:
+            thread_thickness_mm: Thread thickness in millimeters
+            diameter_inches: Physical board diameter in inches
+            canvas_px: Canvas size in pixels
+
+        Returns:
+            Line opacity (0.0 to 1.0) - thicker threads have higher opacity
+        """
+        thread_px = Config.mm_to_pixels(thread_thickness_mm, diameter_inches, canvas_px)
+        # Opacity scales with thickness: ~15px thread = full opacity, thin threads = lower
+        return min(1.0, thread_px / 15.0)
