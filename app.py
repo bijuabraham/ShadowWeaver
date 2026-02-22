@@ -57,15 +57,6 @@ thread_thickness_mm = st.sidebar.number_input(
     help="Physical thickness of your thread",
 )
 
-total_lines = st.sidebar.slider(
-    "Total Lines",
-    min_value=500,
-    max_value=4000,
-    value=Config.DEFAULT_TOTAL_LINES,
-    step=100,
-    help="Maximum number of thread lines to generate",
-)
-
 min_nail_skip = st.sidebar.number_input(
     "Minimum Nail Skip",
     min_value=5,
@@ -98,8 +89,6 @@ use_two_colors = st.sidebar.checkbox(
 )
 
 thread_color_2 = None
-lines_color_1 = None
-lines_color_2 = None
 
 if use_two_colors:
     thread_color_2 = st.sidebar.color_picker(
@@ -108,11 +97,11 @@ if use_two_colors:
         help="Secondary thread color (alternates with primary)",
     )
 
-    # Split total lines between the two colors
+    # Lines for each color
     col1, col2 = st.sidebar.columns(2)
     with col1:
         lines_color_1 = st.number_input(
-            "Lines Color 1",
+            "Lines (Color 1)",
             min_value=100,
             max_value=4000,
             value=Config.DEFAULT_TOTAL_LINES // 2,
@@ -121,15 +110,23 @@ if use_two_colors:
         )
     with col2:
         lines_color_2 = st.number_input(
-            "Lines Color 2",
+            "Lines (Color 2)",
             min_value=100,
             max_value=4000,
             value=Config.DEFAULT_TOTAL_LINES // 2,
             step=100,
             help="Number of lines for color 2",
         )
+    st.sidebar.markdown(f"**Total Lines:** {lines_color_1 + lines_color_2}")
 else:
-    lines_color_1 = Config.DEFAULT_TOTAL_LINES
+    lines_color_1 = st.sidebar.number_input(
+        "Total Lines",
+        min_value=100,
+        max_value=4000,
+        value=Config.DEFAULT_TOTAL_LINES,
+        step=100,
+        help="Total number of thread lines to generate",
+    )
     lines_color_2 = 0
 
 invert_mode = st.sidebar.checkbox(
