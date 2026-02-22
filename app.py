@@ -12,7 +12,7 @@ import streamlit as st
 from src.algorithm import GreedyStringArtAlgorithm
 from src.config import Config
 from src.export import generate_sequence_with_metadata, image_to_bytes
-from src.geometry import calculate_nail_positions, create_radial_weight_map
+from src.geometry import calculate_nail_positions
 from src.image_processing import get_display_image, preprocess_image
 from src.renderer import StringArtRenderer
 
@@ -97,39 +97,6 @@ invert_mode = st.sidebar.checkbox(
     help="Check for dark thread on light background (seeks dark pixels instead of bright)",
 )
 
-# Algorithm settings
-st.sidebar.markdown("---")
-st.sidebar.subheader("Algorithm")
-
-use_radial_weight = st.sidebar.checkbox(
-    "Center Penalty (Radial Weighting)",
-    value=True,
-    help="Penalize center pixels using squared distance. Forces algorithm to define edges (jawline, hair) before center details.",
-)
-
-# Show radial weight configuration only when enabled
-if use_radial_weight:
-    center_min_weight = st.sidebar.slider(
-        "Center Min Weight",
-        min_value=0.05,
-        max_value=0.5,
-        value=0.15,
-        step=0.05,
-        help="Minimum weight for center pixels. Lower = more aggressive center penalty.",
-    )
-
-    radial_power = st.sidebar.slider(
-        "Distance Power",
-        min_value=1.0,
-        max_value=4.0,
-        value=2.0,
-        step=0.5,
-        help="Exponent for distance calculation. Higher = steeper penalty curve (2.0 = squared).",
-    )
-else:
-    center_min_weight = 0.15
-    radial_power = 2.0
-
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
 thread_thickness_px = Config.mm_to_pixels(
@@ -178,15 +145,6 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
-        # Create weight map if radial weighting is enabled
-        # Uses: weight = max(min_weight, (distance/max_radius)^power)
-        # This penalizes center pixels to prioritize edges (jawline, hair)
-        weight_map = (
-            create_radial_weight_map(canvas_size, center_min_weight, radial_power)
-            if use_radial_weight
-            else None
-        )
-
         # Initialize algorithm and renderer
         algorithm = GreedyStringArtAlgorithm(
             target_image=target_image,
@@ -194,7 +152,6 @@ if uploaded_file is not None:
             min_nail_skip=min_nail_skip,
             line_opacity=line_opacity,
             decay_factor=Config.DEFAULT_DECAY_FACTOR,
-            weight_map=weight_map,
         )
 
         renderer = StringArtRenderer(canvas_size, background_color, thread_color)

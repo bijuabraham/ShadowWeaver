@@ -24,7 +24,6 @@ class GreedyStringArtAlgorithm:
         min_nail_skip: int = 20,
         line_opacity: float = 0.1,
         decay_factor: float = 0.85,
-        weight_map: np.ndarray | None = None,
     ):
         """
         Initialize the algorithm.
@@ -35,7 +34,6 @@ class GreedyStringArtAlgorithm:
             min_nail_skip: Minimum circular distance between consecutive nails
             line_opacity: How much white each line adds (for reference)
             decay_factor: How much to reduce target intensity after line (0.0-1.0)
-            weight_map: Optional weight map for prioritizing center pixels
         """
         self.target = target_image.astype(np.float32) / 255.0
         self.nails = nail_positions
@@ -44,12 +42,6 @@ class GreedyStringArtAlgorithm:
         self.line_opacity = line_opacity
         self.decay_factor = decay_factor
         self.sequence: list[int] = []
-
-        # Weight map for center prioritization (default to uniform weights)
-        if weight_map is not None:
-            self.weight_map = weight_map
-        else:
-            self.weight_map = np.ones_like(self.target)
 
         # Pre-compute valid nail pairs (respecting min_skip)
         self._precompute_valid_connections()
@@ -78,7 +70,7 @@ class GreedyStringArtAlgorithm:
             nail_b: Ending nail index
 
         Returns:
-            Weighted average intensity along the line
+            Average intensity along the line
         """
         p1 = tuple(self.nails[nail_a])
         p2 = tuple(self.nails[nail_b])
@@ -90,17 +82,11 @@ class GreedyStringArtAlgorithm:
         x_coords = np.clip(pixels[:, 0], 0, self.target.shape[1] - 1)
         y_coords = np.clip(pixels[:, 1], 0, self.target.shape[0] - 1)
 
-        # Get intensities and weights along line
+        # Get intensities along line
         intensities = self.target[y_coords, x_coords]
-        weights = self.weight_map[y_coords, x_coords]
 
-        # Weighted average: sum(intensity * weight) / sum(weight)
-        weighted_sum = np.sum(intensities * weights)
-        weight_total = np.sum(weights)
-
-        if weight_total > 0:
-            return float(weighted_sum / weight_total)
-        return 0.0
+        # Average intensity along the line
+        return float(np.mean(intensities))
 
     def apply_decay(self, nail_a: int, nail_b: int) -> None:
         """
