@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import streamlit as st
 
-from src.algorithm import GreedyStringArtAlgorithm
+from src.algorithm import GradientDescentStringArtAlgorithm, GreedyStringArtAlgorithm
 from src.config import Config
 from src.export import generate_sequence_with_metadata, image_to_bytes
 from src.geometry import calculate_nail_positions
@@ -135,6 +135,13 @@ invert_mode = st.sidebar.checkbox(
     help="Check for dark thread on light background (seeks dark pixels instead of bright)",
 )
 
+algorithm_type = st.sidebar.selectbox(
+    "Algorithm",
+    ["Greedy", "Gradient Descent"],
+    index=0,
+    help="Greedy: picks best line at each step. Gradient Descent: optimizes all line weights globally to minimize error.",
+)
+
 # Calculate derived values
 canvas_size = Config.CANVAS_SIZE_PX
 thread_thickness_px = Config.mm_to_pixels(
@@ -183,14 +190,22 @@ if uploaded_file is not None:
 
     # Generate button
     if st.button("Generate String Art", type="primary", use_container_width=True):
-        # Initialize algorithm and renderer
-        algorithm = GreedyStringArtAlgorithm(
-            target_image=target_image,
-            nail_positions=nail_positions,
-            min_nail_skip=min_nail_skip,
-            line_opacity=line_opacity,
-            decay_factor=Config.DEFAULT_DECAY_FACTOR,
-        )
+        # Initialize algorithm based on selection
+        if algorithm_type == "Gradient Descent":
+            algorithm = GradientDescentStringArtAlgorithm(
+                target_image=target_image,
+                nail_positions=nail_positions,
+                min_nail_skip=min_nail_skip,
+                line_opacity=line_opacity,
+            )
+        else:
+            algorithm = GreedyStringArtAlgorithm(
+                target_image=target_image,
+                nail_positions=nail_positions,
+                min_nail_skip=min_nail_skip,
+                line_opacity=line_opacity,
+                decay_factor=Config.DEFAULT_DECAY_FACTOR,
+            )
 
         renderer = StringArtRenderer(
             canvas_size, background_color, thread_color, thread_color_2
