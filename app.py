@@ -86,10 +86,24 @@ background_color = st.sidebar.color_picker(
 )
 
 thread_color = st.sidebar.color_picker(
-    "Thread Color",
+    "Thread Color 1",
     Config.DEFAULT_THREAD_COLOR,
-    help="Color of the thread",
+    help="Primary thread color",
 )
+
+use_two_colors = st.sidebar.checkbox(
+    "Use Two Thread Colors",
+    value=False,
+    help="Enable alternating between two thread colors for visual effect",
+)
+
+thread_color_2 = None
+if use_two_colors:
+    thread_color_2 = st.sidebar.color_picker(
+        "Thread Color 2",
+        "#FF6B6B",
+        help="Secondary thread color (alternates with primary)",
+    )
 
 invert_mode = st.sidebar.checkbox(
     "Invert Algorithm",
@@ -154,7 +168,9 @@ if uploaded_file is not None:
             decay_factor=Config.DEFAULT_DECAY_FACTOR,
         )
 
-        renderer = StringArtRenderer(canvas_size, background_color, thread_color)
+        renderer = StringArtRenderer(
+            canvas_size, background_color, thread_color, thread_color_2
+        )
         renderer.create_blank_canvas()
 
         # Progress tracking
@@ -169,7 +185,9 @@ if uploaded_file is not None:
             # Draw line
             p1 = tuple(nail_positions[from_nail])
             p2 = tuple(nail_positions[to_nail])
-            renderer.draw_line(p1, p2, thread_thickness_px, line_opacity)
+            # Alternate colors: even iterations = color 1, odd iterations = color 2
+            color_index = 1 if (use_two_colors and iteration % 2 == 1) else 0
+            renderer.draw_line(p1, p2, thread_thickness_px, line_opacity, color_index)
 
             sequence.append(to_nail)
 
@@ -237,13 +255,15 @@ else:
 
     bg_rgb = hex_to_rgb(background_color)
     thread_rgb = hex_to_rgb(thread_color)
+    thread_rgb_2 = hex_to_rgb(thread_color_2) if thread_color_2 else thread_rgb
 
     preview = np.zeros((canvas_size, canvas_size, 3), dtype=np.uint8)
     preview[:, :] = bg_rgb  # Fill with background color
 
-    # Draw nails with thread color
+    # Draw nails with thread color (alternating if two colors enabled)
     for i, (x, y) in enumerate(preview_nails):
-        cv2.circle(preview, (int(x), int(y)), 3, thread_rgb, -1)
+        nail_color = thread_rgb_2 if (use_two_colors and i % 2 == 1) else thread_rgb
+        cv2.circle(preview, (int(x), int(y)), 3, nail_color, -1)
         # Label every 20th nail for clarity
         if i % 20 == 0:
             # Use a contrasting gray for labels

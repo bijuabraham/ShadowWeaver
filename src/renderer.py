@@ -39,6 +39,7 @@ class StringArtRenderer:
         canvas_size: int = 800,
         background_color: str = "#000000",
         thread_color: str = "#FFFFFF",
+        thread_color_2: str | None = None,
     ):
         """
         Initialize the renderer.
@@ -46,13 +47,19 @@ class StringArtRenderer:
         Args:
             canvas_size: Size of the square canvas in pixels
             background_color: Hex color for background (e.g., "#000000")
-            thread_color: Hex color for thread (e.g., "#FFFFFF")
+            thread_color: Primary thread color (e.g., "#FFFFFF")
+            thread_color_2: Optional second thread color for alternating lines
         """
         self.canvas_size = canvas_size
         self.background_rgb = hex_to_rgb(background_color)
         self.thread_rgb = hex_to_rgb(thread_color)
         self.background_norm = rgb_to_normalized(self.background_rgb)
         self.thread_norm = rgb_to_normalized(self.thread_rgb)
+
+        # Second thread color (optional)
+        self.thread_rgb_2 = hex_to_rgb(thread_color_2) if thread_color_2 else None
+        self.thread_norm_2 = rgb_to_normalized(self.thread_rgb_2) if thread_color_2 else None
+
         self.canvas: np.ndarray | None = None
 
     def create_blank_canvas(self) -> np.ndarray:
@@ -76,6 +83,7 @@ class StringArtRenderer:
         p2: tuple,
         thickness_px: float,
         opacity: float = 0.1,
+        color_index: int = 0,
     ) -> None:
         """
         Draw a line with additive blending toward thread color.
@@ -88,9 +96,16 @@ class StringArtRenderer:
             p2: Ending point (x, y)
             thickness_px: Line thickness in pixels
             opacity: Amount to blend toward thread color per line (0.0 to 1.0)
+            color_index: Which thread color to use (0 = primary, 1 = secondary)
         """
         if self.canvas is None:
             self.create_blank_canvas()
+
+        # Select thread color based on color_index
+        if color_index == 1 and self.thread_norm_2 is not None:
+            thread_norm = self.thread_norm_2
+        else:
+            thread_norm = self.thread_norm
 
         # Create temporary mask for the line
         line_mask = np.zeros((self.canvas_size, self.canvas_size), dtype=np.float32)
@@ -108,7 +123,7 @@ class StringArtRenderer:
         # Blend toward thread color where line is drawn
         # For each channel: canvas = canvas + (thread - canvas) * mask * opacity
         for i in range(3):
-            diff = self.thread_norm[i] - self.canvas[:, :, i]
+            diff = thread_norm[i] - self.canvas[:, :, i]
             self.canvas[:, :, i] += diff * line_mask * opacity
 
         # Clip to valid range
