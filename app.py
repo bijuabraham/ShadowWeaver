@@ -98,12 +98,39 @@ use_two_colors = st.sidebar.checkbox(
 )
 
 thread_color_2 = None
+lines_color_1 = None
+lines_color_2 = None
+
 if use_two_colors:
     thread_color_2 = st.sidebar.color_picker(
         "Thread Color 2",
         "#FF6B6B",
         help="Secondary thread color (alternates with primary)",
     )
+
+    # Split total lines between the two colors
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        lines_color_1 = st.number_input(
+            "Lines Color 1",
+            min_value=100,
+            max_value=4000,
+            value=Config.DEFAULT_TOTAL_LINES // 2,
+            step=100,
+            help="Number of lines for color 1",
+        )
+    with col2:
+        lines_color_2 = st.number_input(
+            "Lines Color 2",
+            min_value=100,
+            max_value=4000,
+            value=Config.DEFAULT_TOTAL_LINES // 2,
+            step=100,
+            help="Number of lines for color 2",
+        )
+else:
+    lines_color_1 = Config.DEFAULT_TOTAL_LINES
+    lines_color_2 = 0
 
 invert_mode = st.sidebar.checkbox(
     "Invert Algorithm",
@@ -180,28 +207,53 @@ if uploaded_file is not None:
         # Store sequence
         sequence = [0]  # Start from nail 0
 
+        # Track lines per color
+        lines_drawn_color_1 = 0
+        lines_drawn_color_2 = 0
+        max_lines = lines_color_1 + lines_color_2
+
         # Run algorithm with progress updates
-        for iteration, from_nail, to_nail in algorithm.run(total_lines, start_nail=0):
+        for iteration, from_nail, to_nail in algorithm.run(max_lines, start_nail=0):
+            # Determine which color to use
+            if use_two_colors:
+                # Alternate: even = color 1, odd = color 2
+                color_index = iteration % 2
+
+                # Skip if we've reached the limit for this color
+                if color_index == 0 and lines_drawn_color_1 >= lines_color_1:
+                    sequence.append(to_nail)
+                    continue
+                if color_index == 1 and lines_drawn_color_2 >= lines_color_2:
+                    sequence.append(to_nail)
+                    continue
+            else:
+                color_index = 0
+
             # Draw line
             p1 = tuple(nail_positions[from_nail])
             p2 = tuple(nail_positions[to_nail])
-            # Alternate colors: even iterations = color 1, odd iterations = color 2
-            color_index = 1 if (use_two_colors and iteration % 2 == 1) else 0
             renderer.draw_line(p1, p2, thread_thickness_px, line_opacity, color_index)
+
+            # Track line counts
+            if color_index == 0:
+                lines_drawn_color_1 += 1
+            else:
+                lines_drawn_color_2 += 1
 
             sequence.append(to_nail)
 
             # Update progress (every 10 iterations for performance)
+            total_drawn = lines_drawn_color_1 + lines_drawn_color_2
             if iteration % 10 == 0:
-                progress = (iteration + 1) / total_lines
+                progress = total_drawn / max_lines
                 progress_bar.progress(progress)
-                status_text.text(f"Processing line {iteration + 1}/{total_lines}")
+                status_text.text(f"Processing line {total_drawn}/{max_lines}")
 
             # Update visualization periodically
             if iteration % 50 == 0:
                 simulation_placeholder.image(
                     renderer.get_display_image(),
-                    caption=f"Progress: {iteration + 1} lines",
+                    caption=f"Progress: {total_drawn} lines",
                     use_container_width=True,
                 )
 
